@@ -1,3 +1,4 @@
+from .attachment import Attachment
 from .channel import Channel
 from .embed import Embed
 from .emoji import Emoji
@@ -17,6 +18,7 @@ from .user import User
 from .webhook import Webhook
 
 __all__ = [
+    "Attachment",
     "Channel",
     "Embed",
     "Emoji",

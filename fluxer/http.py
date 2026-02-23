@@ -1479,8 +1479,15 @@ class HTTPClient:
         username: str | None = None,
         avatar_url: str | None = None,
         wait: bool = False,
+        files: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any] | None:
         """POST /webhooks/{webhook_id}/{token}"""
+        route = self._route(
+            "POST",
+            "/webhooks/{webhook_id}/{token}",
+            webhook_id=webhook_id,
+            token=token,
+        )
         payload: dict[str, Any] = {}
         if content is not None:
             payload["content"] = content
@@ -1491,13 +1498,25 @@ class HTTPClient:
         if avatar_url is not None:
             payload["avatar_url"] = avatar_url
         params = {"wait": "true"} if wait else None
+        if files:
+            form = aiohttp.FormData()
+            payload["attachments"] = [
+                {"id": i, "filename": file["filename"]} for i, file in enumerate(files)
+            ]
+            form.add_field(
+                "payload_json",
+                json_mod.dumps(payload),
+                content_type="application/json",
+            )
+            for i, file in enumerate(files):
+                form.add_field(
+                    f"files[{i}]",
+                    file["data"],
+                    filename=file["filename"],
+                )
+            return await self.request(route, data=form, params=params)
         return await self.request(
-            self._route(
-                "POST",
-                "/webhooks/{webhook_id}/{token}",
-                webhook_id=webhook_id,
-                token=token,
-            ),
+            route,
             json=payload,
             params=params,
         )

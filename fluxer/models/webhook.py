@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 from fluxer.models.user import User
 
 if TYPE_CHECKING:
+    from ..file import File
     from ..http import HTTPClient
     from .message import Message
 
@@ -85,6 +86,8 @@ class Webhook:
         embeds: list[dict[str, Any]] | None = None,
         username: str | None = None,
         avatar_url: str | None = None,
+        file: File | None = None,
+        files: list[File] | None = None,
         wait: bool = False,
     ) -> Message | None:
         """Send a message with this webhook.
@@ -94,6 +97,8 @@ class Webhook:
             embeds: List of embed dicts to include.
             username: Override the webhook's default name.
             avatar_url: Override the webhook's default avatar.
+            file: A single File object to attach.
+            files: Multiple File objects to attach.
             wait: If True, returns the created Message.
 
         Returns:
@@ -101,6 +106,12 @@ class Webhook:
         """
         if not self._http:
             raise RuntimeError("Cannot send with webhook without HTTPClient")
+
+        file_list: list[dict[str, Any]] | None = None
+        if file is not None:
+            file_list = [file.to_dict()]
+        elif files is not None:
+            file_list = [f.to_dict() for f in files]
 
         data = await self._http.execute_webhook(
             self.id,
@@ -110,6 +121,7 @@ class Webhook:
             username=username,
             avatar_url=avatar_url,
             wait=wait,
+            files=file_list,
         )
         if data is not None:
             from .message import Message

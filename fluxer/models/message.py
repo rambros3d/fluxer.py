@@ -9,6 +9,7 @@ from ..utils import snowflake_to_datetime
 if TYPE_CHECKING:
     from ..file import File
     from ..http import HTTPClient
+    from .attachment import Attachment
     from .channel import Channel
     from .reaction import PartialEmoji, Reaction
     from .user import User
@@ -26,7 +27,7 @@ class Message:
     edited_timestamp: str | None = None
     guild_id: int | None = None
     embeds: list[dict[str, Any]] = field(default_factory=list)
-    attachments: list[dict[str, Any]] = field(default_factory=list)
+    attachments: list[Attachment] = field(default_factory=list)
     mentions: list[User] = field(default_factory=list)
     pinned: bool = False
     reactions: list[Reaction] = field(default_factory=list)
@@ -36,11 +37,15 @@ class Message:
 
     @classmethod
     def from_data(cls, data: dict[str, Any], http: HTTPClient | None = None) -> Message:
+        from .attachment import Attachment
         from .reaction import Reaction
         from .user import User
 
         author = User.from_data(data["author"], http)
         mentions = [User.from_data(u, http) for u in data.get("mentions", [])]
+        attachments = [
+            Attachment.from_data(a) for a in data.get("attachments", [])
+        ]
 
         # Create message first without reactions
         message = cls(
@@ -52,7 +57,7 @@ class Message:
             edited_timestamp=data.get("edited_timestamp"),
             guild_id=int(data["guild_id"]) if data.get("guild_id") else None,
             embeds=data.get("embeds", []),
-            attachments=data.get("attachments", []),
+            attachments=attachments,
             mentions=mentions,
             pinned=data.get("pinned", False),
             _http=http,
